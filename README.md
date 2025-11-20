@@ -102,9 +102,6 @@ This meant that the solution needed to be
  - preferably simple
 
 ## The Solution
-Given that background, we had some special constrains when comming up with a solution that don't fit everyone, but I think this
-might be a useful idea even if a bit contrarian in the rust community.
-
 The solution we came up with was 11 lines of code that we named `dumballoc!`
 
 ```rust
@@ -139,7 +136,7 @@ By allocating a thread-local variable, we know that any function using `dumballo
 since every thread will have their own allocations, and by calling `dumballoc_clear!` we can ensure that the re-used allocation
 is cleared before the function starts using it.
 
-This we found to be an elegant solution as a rewrite was now trivial.
+This we found to be an elegant solution as a rewrite of an old function was now trivial.
 
 ```rust
 let mut stack = vec![];
@@ -149,15 +146,18 @@ let stack = dumballoc_clear!(Vec<usize>);
 
 and no other code needs to be touched. If that stack was previously allocated in a hot loop, it will now automatically re-use its buffer.
 
-
-
+We had special usecases and constraints (that don't fit everyone or everywhere!), but I wanted to share this as I think this
+might be a useful idea even if a bit contrarian in the rust community.
 
 ## Alternatives
-Of course, there are other ways to solve the problems presented here, but they all have different tradeoffs. Being aware of multiple solutions with different tradeoffs is what
+Of course, there are other ways to solve the problems presented here, and they all have different tradeoffs. Being aware of multiple solutions with different trade-offs is what
 allows you to make an informed decision rather than just blindly doing what everyone else does.
 
 Using dumballoc means that the worst-case calling of the functions utilizing it will eventually allocate a buffer of the worst-case size and it will never be de-allocated.
 For us, this was a totally fine trade-off, but beware that the total memory usage now becomes the sum of all the worst-cases requirements
+
+It further ***requires special care with recursion*** as each recursive call will utilize the exact same allocation and clear it thus violating safety guarantees. We had no recursive
+gamelogic with a perf issue, so `dumballoc` isn't used there.
 
 If this is an issue for you, and it should be in many cases, you should most likely not be using `dumballoc!` there and rather look in to alternatives
 
@@ -203,7 +203,7 @@ loop {
 
 It is completely transparent to any code you are calling that does allocations, and it can potentially result in huge performance gains.
 
-Of course, you will now become in-charge of making sure that the owned allocations of any returned structures
+Of course, you will now become in-charge of making sure that the owned allocations of any returned structures have the correct lifetimes for your allocators
 
 > With great power comes great responsibility
 
@@ -212,3 +212,8 @@ If you enjoy type-spaghetti, then of course you can make every single structure 
 which seems to be the way rust wants us to do it in the future.
 
 Sounds fun to write and read all those extra brackets
+
+# License
+Copyright 2025 Erik W. Gren
+
+This code is licensed under the MIT license. See `LICENSE`
