@@ -1,7 +1,8 @@
 [package]
 name = "dumballoc"
-version = "0.1.0"
+version = "1.0.0"
 edition = "2024"
 
-[dependencies]
-
+license = "MIT"
+description = "A dumb (or smart?) alternative allocation strategy for reusable allocations"
+author = "ErikWDev"
