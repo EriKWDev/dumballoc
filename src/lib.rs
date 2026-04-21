@@ -1,3 +1,5 @@
+#![no_std]
+
 #[macro_export]
 /// allocates a given type in a thread-local static variable so that subsequent calls at the same callsite will reuse
 /// the same allocation
@@ -5,16 +7,19 @@
 /// use `dumballoc_clear!` to automatically call `dumballoc!` and `.clear()` on the result
 macro_rules! dumballoc {
     ($T:ty) => {{
+        /*
+            NOTE: Calling them 'DUMB' makes it easier to identify these dumballoc threadlocals in readelf debugging and whatnot..
+        */
         $crate::dumballoc!(DUMB, $T)
     }};
-
     ($name:ident, $T:ty) => {{
             thread_local! {
-                static $name: std::cell::UnsafeCell<Option<$T>> = const { std::cell::UnsafeCell::new(None) };
+                static $name: ::core::cell::UnsafeCell<::core::cell::LazyCell<$T>> = const { ::core::cell::UnsafeCell::new(::core::cell::LazyCell::new(<$T as Default>::default)) };
             }
-            $name.with(|it| unsafe {
+            $name.with(|it| {
                 let ptr = it.get();
-                (*ptr).get_or_insert_default()
+                let ptr = unsafe { &mut *ptr };
+                ::core::cell::LazyCell::force_mut(ptr)
             })
     }};
 }
