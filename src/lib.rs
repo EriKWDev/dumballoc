@@ -19,7 +19,8 @@ macro_rules! dumballoc {
             $name.with(|it| {
                 let ptr = it.get();
                 let ptr = unsafe { &mut *ptr };
-                ::core::cell::LazyCell::force_mut(ptr)
+                // ::core::cell::LazyCell::force_mut(ptr) // not stable until 1.94
+                ::core::ops::DerefMut::deref_mut(ptr)
             })
     }};
 }
